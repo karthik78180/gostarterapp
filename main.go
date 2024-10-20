@@ -18,7 +18,8 @@ func main() {
 		Use:   "gostarterapp",
 		Short: "A CLI tool to fetch zones based on environment and project",
 		Run: func(cmd *cobra.Command, args []string) {
-			zones, err := service.GetZones(env, project, bearerToken)
+			// Call GetZones function which uses validation to prompt for inputs and check validity
+			env, project, bearerToken, zones, err := service.GetValidatedZones(env, project, bearerToken)
 			if err != nil {
 				fmt.Println(err)
 				os.Exit(1)
@@ -32,14 +33,12 @@ func main() {
 		},
 	}
 
+	// Define flags
 	rootCmd.Flags().StringVarP(&env, "env", "e", "", "Environment")
 	rootCmd.Flags().StringVarP(&project, "project", "p", "", "Project")
 	rootCmd.Flags().StringVarP(&bearerToken, "token", "t", "", "Bearer Token")
 
-	rootCmd.MarkFlagRequired("env")
-	rootCmd.MarkFlagRequired("project")
-	rootCmd.MarkFlagRequired("token")
-
+	// Execute command
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
