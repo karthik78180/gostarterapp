@@ -98,9 +98,10 @@ func callApi(host, port, zone, accessToken string) (ApiResponse, string, error) 
 	return apiResponse, resBody, nil
 }
 
-// writeResultsToCSV writes the results to a CSV file
+// writeResultsToCSV appends the results to a CSV file
 func writeResultsToCSV(allZoneResults [][]Result, outputFile string) error {
-	file, err := os.Create(outputFile)
+	// Open the file in append mode, create it if it doesn't exist
+	file, err := os.OpenFile(outputFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
@@ -109,16 +110,23 @@ func writeResultsToCSV(allZoneResults [][]Result, outputFile string) error {
 	writer := csv.NewWriter(file)
 	defer writer.Flush()
 
-	// Write the header
-	headers := []string{"host", "port"}
-	for _, zone := range zones {
-		headers = append(headers, fmt.Sprintf("%s status", zone), fmt.Sprintf("%s response body", zone), fmt.Sprintf("%s error", zone))
-	}
-	if err := writer.Write(headers); err != nil {
+	// Check if the file is new (i.e., is empty) and write the header only once
+	info, err := file.Stat()
+	if err != nil {
 		return err
 	}
+	if info.Size() == 0 {
+		// Write the header if the file is new or empty
+		headers := []string{"host", "port"}
+		for _, zone := range zones {
+			headers = append(headers, fmt.Sprintf("%s status", zone), fmt.Sprintf("%s response body", zone), fmt.Sprintf("%s error", zone))
+		}
+		if err := writer.Write(headers); err != nil {
+			return err
+		}
+	}
 
-	// Write the rows
+	// Write the rows (results)
 	for i := 0; i < len(allZoneResults[0]); i++ {
 		row := []string{allZoneResults[0][i].Host, allZoneResults[0][i].Port}
 		for _, zoneResults := range allZoneResults {

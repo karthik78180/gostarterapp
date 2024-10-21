@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strings"
 	"time"
 )
 
@@ -15,34 +14,36 @@ func refreshToken() string {
 }
 
 func main() {
+	outputFile := "output_results.csv" // Single output file for all cycles
+
 	// Infinite loop to refresh the access token every 30 minutes
 	for {
 		accessToken = refreshToken()
 
-		// Collect results for the current interval
-		var allZoneResults [][]Result
+		// Step 1: Load all entries
+		entries := loadEntries()
 
-		// Process data for all zones
-		for _, zone := range zones {
-			entries := loadEntries() // Assuming entries are loaded from some source
-			for i := 0; i < len(entries); i += 10 {
-				end := i + 10
-				if end > len(entries) {
-					end = len(entries)
-				}
-				// Process each batch for the current zone
-				results, err := ProcessZoneBatch(entries[i:end], zone, accessToken)
+		// Step 2: Create batches of 10 entries
+		var allZoneResults [][]Result
+		for i := 0; i < len(entries); i += 10 {
+			end := i + 10
+			if end > len(entries) {
+				end = len(entries)
+			}
+			batch := entries[i:end]
+
+			// Step 3: Loop over all zones for the current batch of 10 entries
+			for _, zone := range zones {
+				results, err := ProcessZoneBatch(batch, zone, accessToken)
 				if err != nil {
 					fmt.Println("Error processing batch:", err)
 					return
 				}
 				allZoneResults = append(allZoneResults, results)
-				time.Sleep(30 * time.Second) // Wait for 30 seconds between batches
 			}
 		}
 
-		// Write results to CSV
-		outputFile := fmt.Sprintf("output_%s.csv", strings.ReplaceAll(time.Now().Format(time.RFC3339), ":", "_"))
+		// Step 4: Write results to CSV at the end of 30 minutes
 		err := writeResultsToCSV(allZoneResults, outputFile)
 		if err != nil {
 			fmt.Println("Error writing to CSV:", err)
