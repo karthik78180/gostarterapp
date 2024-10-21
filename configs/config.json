@@ -1,4 +1,0 @@
-{
-    "environments": ["dev", "test", "prod_1", "prod_2", "prod_3", "prod_4"],
-    "projects": ["OD", "ODS", "OD-IDL", "ODS-IDL"]
-}
